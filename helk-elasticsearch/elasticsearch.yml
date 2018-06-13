@@ -99,4 +99,4 @@ discovery.type: single-node
 # and automatically activated with a free licence. The platinum flavor features all X-Pack 
 # functionally under a 30-day trial licence. The oss flavor does not include X-Pack, 
 # and contains only open-source Elasticsearch.
-xpack.license.self_generated.type: basic
+xpack.license.self_generated.type: trial

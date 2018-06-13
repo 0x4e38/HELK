@@ -103,5 +103,5 @@ logging.dest: /usr/share/kibana/config/kibana_logs.log
 
 # Default Kibana configuration from kibana-docker.
 elasticsearch.username: elastic
-elasticsearch.password: changeme
+elasticsearch.password: elasticpassword
 xpack.monitoring.ui.container.elasticsearch.enabled: true

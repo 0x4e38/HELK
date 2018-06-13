@@ -14,7 +14,9 @@
 # https://github.com/elastic/stack-docker/blob/master/docker-compose.yml
 
 # *********** Setting Variables ***************
-KIBANA="helk-kibana:5601"
+KIBANA=helk-kibana:5601
+KIBANA_ACCESS=http://kibana:"kibanapassword"@helk-kibana:5601
+ELASTICSEARCH_ACCESS=http://elastic:"elasticpassword"@helk-elasticsearch:9200
 TIME_FIELD="@timestamp"
 DEFAULT_INDEX="logs-endpoint-winevent-sysmon-*"
 DIR=/usr/share/kibana/dashboards
@@ -24,7 +26,7 @@ declare -a index_patterns=("logs-endpoint-*" "logs-*" "logs-endpoint-winevent-sy
 
 # *********** Waiting for Kibana to be available ***************
 echo "[++] Checking to see if kibana is up..."
-until curl -v helk-kibana:5601 -o /dev/null; do
+until curl -v $KIBANA -o /dev/null; do
     sleep 1
 done
 
@@ -32,22 +34,73 @@ done
 echo "[++] Creating Kibana Index Patterns..."
 for index in ${!index_patterns[@]}; do 
     curl -f -XPOST -H "Content-Type: application/json" -H "kbn-xsrf: anything" \
-    "$KIBANA/api/saved_objects/index-pattern/${index_patterns[${index}]}" \
+    "$KIBANA_ACCESS/api/saved_objects/index-pattern/${index_patterns[${index}]}" \
     -d"{\"attributes\":{\"title\":\"${index_patterns[${index}]}\",\"timeFieldName\":\"$TIME_FIELD\"}}"
 done
 
 # *********** Making Sysmon the default index ***************
 echo "[++] Making Sysmon the default index..."
 curl -XPOST -H "Content-Type: application/json" -H "kbn-xsrf: anything" \
-"$KIBANA/api/kibana/settings/defaultIndex" \
+"$KIBANA_ACCESS/api/kibana/settings/defaultIndex" \
 -d"{\"value\":\"$DEFAULT_INDEX\"}"
 
 # *********** Loading dashboards ***************
 echo "[++] Loading Dashboards..."
 for file in ${DIR}/*.json
 do  
-    curl -XPOST "$KIBANA/api/kibana/dashboards/import" -H 'kbn-xsrf:true' \
+    curl -XPOST "$KIBANA_ACCESS/api/kibana/dashboards/import" -H 'kbn-xsrf:true' \
     -H 'Content-type:application/json' -d @${file} || exit 1
 done
 
-
+# *********** Creating HELK User *********************
+curl -s -H 'Content-Type:application/json' -XPUT $ELASTICSEARCH_ACCESS/_xpack/security/user/${HELK_USER} -d"
+{
+  \"password\" : \"${HELK_PASSWORD}\",
+  \"roles\" : [ \"superuser\" ],
+  \"full_name\" : \"The HELK\",
+  \"email\" : \"helk@example.com\"
+}
+"
+# *********** Create Roles *******************
+curl -s -H 'Content-Type:application/json' -XPUT $ELASTICSEARCH_ACCESS/_xpack/security/role/hunters -d'
+{
+  "run_as": [],
+  "cluster": [],
+  "indices": [
+    {
+      "names": [ "logs-*" ],
+      "privileges": [ "read" ]
+    }
+  ]
+}
+'
+curl -s -H 'Content-Type:application/json' -XPUT $ELASTICSEARCH_ACCESS/_xpack/security/role/sysmon_hunters -d'
+{
+  "run_as": [],
+  "cluster": [],
+  "indices": [
+    {
+      "names": [ "logs-endpoint-winevent-sysmon-*" ],
+      "privileges": [ "read" ]
+    }
+  ]
+}
+'
+# *********** Creating Cyb3rWard0g User *********************
+curl -s -H 'Content-Type:application/json' -XPUT $ELASTICSEARCH_ACCESS/_xpack/security/user/Cyb3rWard0g -d'
+{
+  "password" : "Wh@tTh3H3lk",
+  "roles" : [ "kibana_user","hunters" ],
+  "full_name" : "Roberto Rodriguez",
+  "email" : "cyb3rward0g@example.com"
+}
+'
+# *********** Creating Sysmon User *********************
+curl -s -H 'Content-Type:application/json' -XPUT $ELASTICSEARCH_ACCESS/_xpack/security/user/sysmon_hunter -d'
+{
+  "password" : "sysmon",
+  "roles" : [ "kibana_user","sysmon_hunters" ],
+  "full_name" : "Sysmon Hunter",
+  "email" : "sysmon_hunter@example.com"
+}
+'

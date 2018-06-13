@@ -29,7 +29,7 @@ RUN chmod +x /opt/helk/scripts/nginx-entrypoint.sh
 # *********** Installing Nginx ***************
 RUN apt-get install -qqy nginx \
   && mv /etc/nginx/sites-available/default /etc/nginx/sites-available/backup_default
-ADD htpasswd.users /etc/nginx/ 
+#ADD htpasswd.users /etc/nginx/ 
 ADD default /etc/nginx/sites-available/
 RUN apt-get update -qq
 

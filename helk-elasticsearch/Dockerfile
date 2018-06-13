@@ -12,3 +12,5 @@
 FROM docker.elastic.co/elasticsearch/elasticsearch:6.2.4
 LABEL maintainer="Roberto Rodriguez @Cyb3rWard0g"
 LABEL description="Dockerfile base for the HELK Elasticsearch."
+
+RUN printf "elasticpassword" | /usr/share/elasticsearch/bin/elasticsearch-keystore add "bootstrap.password"
