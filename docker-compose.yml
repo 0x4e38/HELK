@@ -41,6 +41,9 @@ services:
     volumes:
       - ./helk-kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
       - ./helk-kibana/dashboards:/usr/share/kibana/dashboards
+    environment:
+      - HELK_USER=helk
+      - HELK_PASSWORD=hunting
     restart: always
     depends_on:
       - helk-elasticsearch
@@ -49,7 +52,7 @@ services:
         aliases:
           - helk_kibana.hunt.local
   helk-nginx:
-    image: cyb3rward0g/helk-nginx:0.0.2
+    build: helk-nginx/
     container_name: helk-nginx
     ports:
       - "80:80"
@@ -175,6 +178,7 @@ services:
       helk:
         aliases:
           - helk_sigma.hunt.local
+
 networks:
   helk:
     driver: bridge
